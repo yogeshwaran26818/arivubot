@@ -11,7 +11,11 @@ export async function POST(request) {
 
     const { query, websiteId } = await request.json();
     if (!query || !websiteId) {
-      return NextResponse.json({ error: 'Query and website ID are required' }, { status: 400 });
+      const response = NextResponse.json({ error: 'Query and website ID are required' }, { status: 400 });
+      response.headers.set('Access-Control-Allow-Origin', '*');
+      response.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+      return response;
     }
 
     // Get stored prompt
@@ -20,18 +24,26 @@ export async function POST(request) {
     const promptData = await db.collection('prompts').findOne({ userId, websiteId });
     
     if (!promptData?.prompt) {
-      return NextResponse.json({ 
+      const response = NextResponse.json({ 
         error: 'Please set a prompt first before chatting' 
       }, { status: 400 });
+      response.headers.set('Access-Control-Allow-Origin', '*');
+      response.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+      return response;
     }
 
     // Get relevant context from embeddings
     const context = await queryEmbeddings(query, websiteId, userId);
     
     if (context.length === 0) {
-      return NextResponse.json({ 
+      const response = NextResponse.json({ 
         response: "I couldn't find relevant information about your query in the website content. Please make sure the website has been trained first." 
       });
+      response.headers.set('Access-Control-Allow-Origin', '*');
+      response.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+      return response;
     }
 
     // Prepare context for the model

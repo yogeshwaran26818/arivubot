@@ -11,6 +11,7 @@ export default function Chat() {
   const [prompt, setPrompt] = useState('');
   const [showPromptModal, setShowPromptModal] = useState(false);
   const [hasPrompt, setHasPrompt] = useState(false);
+  const [showEmbedModal, setShowEmbedModal] = useState(false);
 
   useEffect(() => {
     fetchTrainedWebsites();
@@ -205,6 +206,13 @@ export default function Chat() {
           style={{ background: '#dc3545', padding: '8px 16px' }}
         >
           Delete Chat
+        </button>
+        <button 
+          onClick={() => setShowEmbedModal(true)}
+          className="button"
+          style={{ background: '#17a2b8', padding: '8px 16px' }}
+        >
+          Get Embed Code
         </button>
       </div>
 

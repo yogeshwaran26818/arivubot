@@ -6,7 +6,7 @@ export async function POST(request) {
   try {
     const userId = 'default-user';
 
-    const { url } = await request.json();
+    const { url, reScrape = false } = await request.json();
     console.log('Received scrape request for URL:', url);
     
     if (!url) {
@@ -22,13 +22,20 @@ export async function POST(request) {
       originalUrl: url
     });
 
-    if (existingLink) {
+    if (existingLink && !reScrape) {
       return NextResponse.json({
         success: false,
         alreadyScraped: true,
         message: 'Website already scraped and stored',
         anchorCount: existingLink.anchorCount
       });
+    }
+
+    // If re-scraping, delete existing data
+    if (existingLink && reScrape) {
+      await db.collection('scrapedLinks').deleteMany({ originalUrl: url, userId });
+      await db.collection('websiteData').deleteMany({ websiteId: url });
+      await db.collection('links').deleteOne({ originalUrl: url, userId });
     }
 
     // Scrape the website

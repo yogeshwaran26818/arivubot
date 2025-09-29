@@ -35,7 +35,7 @@
     document.body.insertAdjacentHTML('beforeend', chatbotHTML);
     
     const button = document.getElementById('chatbot-button');
-    const window = document.getElementById('chatbot-window');
+    const chatWindow = document.getElementById('chatbot-window');
     const close = document.getElementById('chatbot-close');
     const input = document.getElementById('chatbot-input');
     const send = document.getElementById('chatbot-send');
@@ -44,11 +44,11 @@
     const websiteId = window.location.origin;
     
     button.addEventListener('click', () => {
-      window.style.display = window.style.display === 'none' ? 'flex' : 'none';
+      chatWindow.style.display = chatWindow.style.display === 'none' ? 'flex' : 'none';
     });
     
     close.addEventListener('click', () => {
-      window.style.display = 'none';
+      chatWindow.style.display = 'none';
     });
     
     async function sendMessage() {

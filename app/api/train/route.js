@@ -24,11 +24,18 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
     }
 
+    // Allow re-training by clearing existing embeddings
     if (website.isEmbedded) {
-      return NextResponse.json({ 
-        error: 'Website already trained',
-        alreadyTrained: true 
-      }, { status: 400 });
+      // Clear existing embeddings for re-training
+      await db.collection('websiteData').deleteMany({ websiteId });
+      await db.collection('scrapedLinks').updateMany(
+        { originalUrl: websiteId, userId },
+        { $set: { isEmbedded: false } }
+      );
+      await db.collection('links').updateOne(
+        { originalUrl: websiteId, userId },
+        { $set: { isEmbedded: false } }
+      );
     }
 
     // Process and embed

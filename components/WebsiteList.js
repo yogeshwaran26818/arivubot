@@ -113,19 +113,17 @@ export default function WebsiteList({ refreshTrigger }) {
               >
                 {expandedWebsite === website.originalUrl ? 'Hide Pages' : 'View Pages'}
               </button>
-              {!website.isEmbedded && (
-                <button
-                  className="button small"
-                  onClick={() => handleTrain(website.originalUrl)}
-                  disabled={trainingStates[website.originalUrl] === 'training'}
-                >
-                  {trainingStates[website.originalUrl] === 'training' ? (
-                    <span className="loading"></span>
-                  ) : (
-                    'Train'
-                  )}
-                </button>
-              )}
+              <button
+                className="button small"
+                onClick={() => handleTrain(website.originalUrl)}
+                disabled={trainingStates[website.originalUrl] === 'training'}
+              >
+                {trainingStates[website.originalUrl] === 'training' ? (
+                  <span className="loading"></span>
+                ) : (
+                  website.isEmbedded ? 'Re-train' : 'Train'
+                )}
+              </button>
               {trainingStates[website.originalUrl] === 'success' && (
                 <span style={{ color: 'green' }}>✅ Trained!</span>
               )}

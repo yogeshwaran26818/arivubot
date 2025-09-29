@@ -8,10 +8,20 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [prompt, setPrompt] = useState('');
+  const [showPromptModal, setShowPromptModal] = useState(false);
+  const [hasPrompt, setHasPrompt] = useState(false);
 
   useEffect(() => {
     fetchTrainedWebsites();
   }, []);
+
+  useEffect(() => {
+    if (selectedWebsite) {
+      loadChatHistory(selectedWebsite);
+      loadPrompt(selectedWebsite);
+    }
+  }, [selectedWebsite]);
 
   const fetchTrainedWebsites = async () => {
     try {
@@ -29,12 +39,90 @@ export default function Chat() {
     }
   };
 
+  const loadChatHistory = async (websiteId) => {
+    try {
+      const response = await fetch(`/api/chat-history?websiteId=${encodeURIComponent(websiteId)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(data.messages.map(msg => ({
+          type: msg.type,
+          content: msg.content,
+          sources: msg.sources
+        })));
+      }
+    } catch (error) {
+      console.error('Failed to load chat history:', error);
+    }
+  };
+
+  const loadPrompt = async (websiteId) => {
+    try {
+      const response = await fetch(`/api/prompts?websiteId=${encodeURIComponent(websiteId)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPrompt(data.prompt);
+        setHasPrompt(data.hasPrompt);
+      }
+    } catch (error) {
+      console.error('Failed to load prompt:', error);
+    }
+  };
+
+  const savePrompt = async () => {
+    try {
+      const response = await fetch('/api/prompts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          websiteId: selectedWebsite,
+          prompt
+        })
+      });
+      if (response.ok) {
+        setHasPrompt(true);
+        setShowPromptModal(false);
+      }
+    } catch (error) {
+      console.error('Failed to save prompt:', error);
+    }
+  };
+
+  const saveChatMessage = async (message, type) => {
+    try {
+      await fetch('/api/chat-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          websiteId: selectedWebsite,
+          message,
+          type
+        })
+      });
+    } catch (error) {
+      console.error('Failed to save chat message:', error);
+    }
+  };
+
+  const deleteChatHistory = async () => {
+    try {
+      const response = await fetch(`/api/chat-history?websiteId=${encodeURIComponent(selectedWebsite)}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        setMessages([]);
+      }
+    } catch (error) {
+      console.error('Failed to delete chat history:', error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!query.trim() || !selectedWebsite) return;
+    if (!query.trim() || !selectedWebsite || !hasPrompt) return;
 
     const userMessage = { type: 'user', content: query };
     setMessages(prev => [...prev, userMessage]);
+    await saveChatMessage(userMessage, 'user');
     setQuery('');
     setLoading(true);
 
@@ -57,12 +145,14 @@ export default function Chat() {
           sources: data.sources 
         };
         setMessages(prev => [...prev, botMessage]);
+        await saveChatMessage(botMessage, 'bot');
       } else {
         const errorMessage = { 
           type: 'bot', 
           content: `Error: ${data.error}` 
         };
         setMessages(prev => [...prev, errorMessage]);
+        await saveChatMessage(errorMessage, 'bot');
       }
     } catch (error) {
       const errorMessage = { 
@@ -70,6 +160,7 @@ export default function Chat() {
         content: 'Failed to get response. Please try again.' 
       };
       setMessages(prev => [...prev, errorMessage]);
+      await saveChatMessage(errorMessage, 'bot');
     } finally {
       setLoading(false);
     }
@@ -88,17 +179,34 @@ export default function Chat() {
     <div className="card">
       <h2>Chat with Website</h2>
       
-      <select 
-        value={selectedWebsite} 
-        onChange={(e) => setSelectedWebsite(e.target.value)}
-        className="input"
-      >
-        {websites.map(website => (
-          <option key={website._id} value={website.originalUrl}>
-            {website.originalUrl}
-          </option>
-        ))}
-      </select>
+      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
+        <select 
+          value={selectedWebsite} 
+          onChange={(e) => setSelectedWebsite(e.target.value)}
+          className="input"
+          style={{ flex: 1 }}
+        >
+          {websites.map(website => (
+            <option key={website._id} value={website.originalUrl}>
+              {website.originalUrl}
+            </option>
+          ))}
+        </select>
+        <button 
+          onClick={() => setShowPromptModal(true)}
+          className="button"
+          style={{ background: hasPrompt ? '#28a745' : '#ffc107', padding: '8px 16px' }}
+        >
+          {hasPrompt ? 'Edit Prompt' : 'Set Prompt'}
+        </button>
+        <button 
+          onClick={deleteChatHistory}
+          className="button"
+          style={{ background: '#dc3545', padding: '8px 16px' }}
+        >
+          Delete Chat
+        </button>
+      </div>
 
       <div className="chat-container">
         {messages.length === 0 ? (
@@ -135,11 +243,51 @@ export default function Chat() {
         <button 
           type="submit" 
           className="button"
-          disabled={loading || !query.trim()}
+          disabled={loading || !query.trim() || !hasPrompt}
         >
-          Send
+          {!hasPrompt ? 'Set Prompt First' : 'Send'}
         </button>
       </form>
+
+      {showPromptModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white', padding: '20px', borderRadius: '8px',
+            width: '90%', maxWidth: '500px'
+          }}>
+            <h3>Set Chat Prompt</h3>
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Enter your custom prompt for the AI assistant..."
+              rows={6}
+              style={{
+                width: '100%', padding: '10px', border: '1px solid #ddd',
+                borderRadius: '4px', marginBottom: '10px'
+              }}
+            />
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => setShowPromptModal(false)}
+                style={{ padding: '8px 16px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '4px' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={savePrompt}
+                disabled={!prompt.trim()}
+                style={{ padding: '8px 16px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}
+              >
+                Save Prompt
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

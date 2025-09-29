@@ -28,7 +28,12 @@ export default function WebsiteUpload({ onUploadSuccess }) {
         setUrl('');
         onUploadSuccess?.();
       } else {
-        setMessage(`❌ ${data.error}`);
+        if (data.alreadyScraped) {
+          setMessage(`⚠️ Website already scraped and stored (${data.anchorCount} pages)`);
+          onUploadSuccess?.();
+        } else {
+          setMessage(`❌ ${data.error}`);
+        }
       }
     } catch (error) {
       setMessage('❌ Failed to upload website');

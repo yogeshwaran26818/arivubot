@@ -16,6 +16,21 @@ export async function POST(request) {
     const client = await clientPromise;
     const db = client.db();
 
+    // Check if URL already exists
+    const existingLink = await db.collection('links').findOne({
+      userId,
+      originalUrl: url
+    });
+
+    if (existingLink) {
+      return NextResponse.json({
+        success: false,
+        alreadyScraped: true,
+        message: 'Website already scraped and stored',
+        anchorCount: existingLink.anchorCount
+      });
+    }
+
     // Scrape the website
     const scrapedData = await scrapeWebsite(url, userId);
     

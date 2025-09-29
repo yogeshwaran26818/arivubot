@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { queryEmbeddings } from '../../../lib/embeddings.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import clientPromise from '../../../lib/mongodb.js';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -11,6 +12,17 @@ export async function POST(request) {
     const { query, websiteId } = await request.json();
     if (!query || !websiteId) {
       return NextResponse.json({ error: 'Query and website ID are required' }, { status: 400 });
+    }
+
+    // Get stored prompt
+    const client = await clientPromise;
+    const db = client.db();
+    const promptData = await db.collection('prompts').findOne({ userId, websiteId });
+    
+    if (!promptData?.prompt) {
+      return NextResponse.json({ 
+        error: 'Please set a prompt first before chatting' 
+      }, { status: 400 });
     }
 
     // Get relevant context from embeddings
@@ -27,18 +39,16 @@ export async function POST(request) {
       .map(item => `Content from ${item.url}: ${item.text}`)
       .join('\n\n');
 
-    const prompt = `You are a professional representative for this company. Answer the user's question based on the website content provided. Be professional, helpful, and informative.
+    const fullPrompt = `${promptData.prompt}
 
 Website Content:
 ${contextText}
 
-User Question: ${query}
-
-Provide a professional response:`;
+User Question: ${query}`;
 
     // Generate response using Gemini
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent(fullPrompt);
     const response = await result.response;
     const answer = response.text();
 
@@ -48,9 +58,8 @@ Provide a professional response:`;
     });
 
   } catch (error) {
-    console.error('Chat error:', error);
     return NextResponse.json({ 
-      error: error.message || 'Failed to process chat query' 
+      error: 'Failed to process chat query' 
     }, { status: 500 });
   }
 }

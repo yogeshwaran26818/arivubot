@@ -12,6 +12,8 @@ export default function Chat() {
   const [showPromptModal, setShowPromptModal] = useState(false);
   const [hasPrompt, setHasPrompt] = useState(false);
   const [showEmbedModal, setShowEmbedModal] = useState(false);
+  const [embedData, setEmbedData] = useState(null);
+  const [loadingEmbed, setLoadingEmbed] = useState(false);
 
   useEffect(() => {
     fetchTrainedWebsites();
@@ -117,6 +119,30 @@ export default function Chat() {
     }
   };
 
+  const generateEmbedCode = async () => {
+    setLoadingEmbed(true);
+    try {
+      const response = await fetch('/api/embed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ websiteId: selectedWebsite })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setEmbedData(data);
+        setShowEmbedModal(true);
+      } else {
+        alert(data.error);
+      }
+    } catch (error) {
+      alert('Failed to generate embed code');
+    } finally {
+      setLoadingEmbed(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!query.trim() || !selectedWebsite || !hasPrompt) return;
@@ -209,11 +235,12 @@ export default function Chat() {
         </button>
         {hasPrompt && (
           <button 
-            onClick={() => setShowEmbedModal(true)}
+            onClick={generateEmbedCode}
             className="button"
+            disabled={loadingEmbed}
             style={{ background: '#17a2b8', padding: '8px 16px' }}
           >
-            Get Embed Code
+            {loadingEmbed ? 'Generating...' : 'Get Embed Code'}
           </button>
         )}
       </div>
@@ -310,19 +337,21 @@ export default function Chat() {
             width: '90%', maxWidth: '600px'
           }}>
             <h3>Embed Chatbot Widget for {selectedWebsite}</h3>
-            <p>Copy this code and paste it into your website where you want the chatbot to appear:</p>
+            <p>Copy this unique embed code and paste it into any website:</p>
             <div style={{
               background: '#f4f4f4', padding: '15px', borderRadius: '5px',
               fontFamily: 'monospace', fontSize: '14px', marginBottom: '15px',
               border: '1px solid #ddd', wordBreak: 'break-all'
             }}>
-              {`<script src="https://arivubot-seven.vercel.app/api/widget/${encodeURIComponent(selectedWebsite)}"></script>`}
+              {embedData?.embedScript}
             </div>
             <div style={{
               background: '#e7f3ff', padding: '10px', borderRadius: '4px',
               fontSize: '12px', marginBottom: '15px'
             }}>
-              <strong>Note:</strong> This chatbot is specifically configured for {selectedWebsite} and will only respond with content from this website.
+              <strong>Embed ID:</strong> {embedData?.embedId}<br/>
+              <strong>Website:</strong> {embedData?.websiteId}<br/>
+              <strong>Note:</strong> This chatbot will respond with content from {selectedWebsite} using your custom prompt.
             </div>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button 
@@ -333,7 +362,7 @@ export default function Chat() {
               </button>
               <button 
                 onClick={() => {
-                  navigator.clipboard.writeText(`<script src="https://arivubot-seven.vercel.app/api/widget/${encodeURIComponent(selectedWebsite)}"></script>`);
+                  navigator.clipboard.writeText(embedData?.embedScript);
                   alert('Embed code copied to clipboard!');
                 }}
                 style={{ padding: '8px 16px', background: '#28a745', color: 'white', border: 'none', borderRadius: '4px' }}

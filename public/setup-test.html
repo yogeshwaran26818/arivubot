@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Setup Embed Test</title>
+</head>
+<body>
+    <h1>Setup SSPackCare Embed</h1>
+    <button onclick="setupEmbed()">Generate Embed Code</button>
+    <div id="result"></div>
+
+    <script>
+        async function setupEmbed() {
+            try {
+                const response = await fetch('/api/setup-embed', {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('result').innerHTML = `
+                        <h3>Success!</h3>
+                        <p><strong>Embed ID:</strong> ${data.embedId}</p>
+                        <p><strong>Embed Script:</strong></p>
+                        <code>${data.embedScript}</code>
+                        <br><br>
+                        <p>Copy this embed ID: <strong>${data.embedId}</strong></p>
+                    `;
+                } else {
+                    document.getElementById('result').innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<p style="color: red;">Failed to setup embed</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

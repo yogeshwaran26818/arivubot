@@ -1,12 +1,24 @@
 import { NextResponse } from 'next/server';
+import clientPromise from '../../../../lib/mongodb.js';
 
 export async function GET(request, { params }) {
-  const { websiteId } = params;
+  const { websiteId: embedId } = params;
   
-  const widgetScript = `
+  try {
+    // Get embed configuration from database
+    const client = await clientPromise;
+    const db = client.db();
+    
+    const embedConfig = await db.collection('embedConfigs').findOne({ embedId });
+    
+    if (!embedConfig) {
+      return new NextResponse('Embed configuration not found', { status: 404 });
+    }
+    
+    const widgetScript = `
 (function() {
   const CHATBOT_API_URL = 'https://arivubot-seven.vercel.app';
-  const WEBSITE_ID = '${decodeURIComponent(websiteId)}';
+  const WEBSITE_ID = '${embedConfig.websiteId}';
   
   const chatbotHTML = \`
     <div id="chatbot-widget" style="position: fixed; bottom: 20px; right: 20px; z-index: 10000; font-family: Arial, sans-serif;">
@@ -119,10 +131,13 @@ export async function GET(request, { params }) {
 })();
 `;
 
-  return new NextResponse(widgetScript, {
-    headers: {
-      'Content-Type': 'application/javascript',
-      'Cache-Control': 'public, max-age=3600'
-    }
-  });
+    return new NextResponse(widgetScript, {
+      headers: {
+        'Content-Type': 'application/javascript',
+        'Cache-Control': 'public, max-age=3600'
+      }
+    });
+  } catch (error) {
+    return new NextResponse('Error loading widget', { status: 500 });
+  }
 }

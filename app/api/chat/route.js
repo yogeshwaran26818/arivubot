@@ -49,17 +49,38 @@ User Question: ${query}`;
     // Generate response using Gemini
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     const result = await model.generateContent(fullPrompt);
-    const response = await result.response;
-    const answer = response.text();
+    const geminiResponse = await result.response;
+    const answer = geminiResponse.text();
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       response: answer,
       sources: context.map(item => ({ url: item.url, score: item.score }))
     });
+    
+    // Add CORS headers
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+    
+    return response;
 
   } catch (error) {
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       error: 'Failed to process chat query' 
     }, { status: 500 });
+    
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+    
+    return response;
   }
+}
+
+export async function OPTIONS() {
+  const response = new NextResponse(null, { status: 200 });
+  response.headers.set('Access-Control-Allow-Origin', '*');
+  response.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+  return response;
 }

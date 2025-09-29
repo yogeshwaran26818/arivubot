@@ -207,13 +207,15 @@ export default function Chat() {
         >
           Delete Chat
         </button>
-        <button 
-          onClick={() => setShowEmbedModal(true)}
-          className="button"
-          style={{ background: '#17a2b8', padding: '8px 16px' }}
-        >
-          Get Embed Code
-        </button>
+        {hasPrompt && (
+          <button 
+            onClick={() => setShowEmbedModal(true)}
+            className="button"
+            style={{ background: '#17a2b8', padding: '8px 16px' }}
+          >
+            Get Embed Code
+          </button>
+        )}
       </div>
 
       <div className="chat-container">
@@ -291,6 +293,52 @@ export default function Chat() {
                 style={{ padding: '8px 16px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}
               >
                 Save Prompt
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEmbedModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white', padding: '20px', borderRadius: '8px',
+            width: '90%', maxWidth: '600px'
+          }}>
+            <h3>Embed Chatbot Widget for {selectedWebsite}</h3>
+            <p>Copy this code and paste it into your website where you want the chatbot to appear:</p>
+            <div style={{
+              background: '#f4f4f4', padding: '15px', borderRadius: '5px',
+              fontFamily: 'monospace', fontSize: '14px', marginBottom: '15px',
+              border: '1px solid #ddd', wordBreak: 'break-all'
+            }}>
+              {`<script src="https://arivubot-seven.vercel.app/api/widget/${encodeURIComponent(selectedWebsite)}"></script>`}
+            </div>
+            <div style={{
+              background: '#e7f3ff', padding: '10px', borderRadius: '4px',
+              fontSize: '12px', marginBottom: '15px'
+            }}>
+              <strong>Note:</strong> This chatbot is specifically configured for {selectedWebsite} and will only respond with content from this website.
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => setShowEmbedModal(false)}
+                style={{ padding: '8px 16px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '4px' }}
+              >
+                Close
+              </button>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(`<script src="https://arivubot-seven.vercel.app/api/widget/${encodeURIComponent(selectedWebsite)}"></script>`);
+                  alert('Embed code copied to clipboard!');
+                }}
+                style={{ padding: '8px 16px', background: '#28a745', color: 'white', border: 'none', borderRadius: '4px' }}
+              >
+                Copy Code
               </button>
             </div>
           </div>

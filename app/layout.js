@@ -12,7 +12,7 @@ export default function RootLayout({ children }) {
       <body>
         {children}
         <Script 
-          src="https://arivubot-seven.vercel.app/api/widget/https%3A%2F%2Fsspackcare.com%2F" 
+          src="https://arivubot-seven.vercel.app/api/widget/mg5d2ikiz1yq7mu33in" 
           strategy="afterInteractive"
         />
       </body>
